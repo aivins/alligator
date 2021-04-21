@@ -1,0 +1,11 @@
+{
+    "python.pythonPath": "venv/bin/python3.9",
+    "files.exclude": {
+        "venv": true,
+        "__pycache__": true,
+        ".pytest_cache": true,
+    },
+    "files.watcherExclude": {
+        "dist": true
+    }
+}

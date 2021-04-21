@@ -1,0 +1,6 @@
+.chalice/deployments/
+.chalice/venv/
+dist
+.pytest_cache
+__pycache__
+docker

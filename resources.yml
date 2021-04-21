@@ -1,0 +1,33 @@
+Description: Network Allocator Resources
+Parameters:
+  CodeBucket:
+    Description: S3 bucket name for ZIP bundle
+    Type: String
+  CodeKey:
+    Description: S3 path of ZIP bundle
+    Type: String
+Resources:
+  APIHandler:
+    Properties:
+      CodeUri:
+        Bucket: !Ref 'CodeBucket'
+        Key: !Ref 'CodeKey'
+      Environment:
+        Variables:
+          NETWORK_TABLE: !Ref 'NetworkTable'
+    Type: AWS::Serverless::Function
+  NetworkTable:
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: NetworkInteger
+          AttributeType: N
+        - AttributeName: NetworkString
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: NetworkInteger
+          KeyType: HASH
+        - AttributeName: NetworkString
+          KeyType: RANGE
+    Type: AWS::DynamoDB::Table
+
