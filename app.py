@@ -1,29 +1,49 @@
-from chalice import Chalice
+import ipaddress
+from chalice import Chalice, NotFoundError
+from database import get_database
 
 app = Chalice(app_name='alligator')
 
 
+def to_payload(data):
+    def cast_value(value):
+        return value
+    return {k:cast_value(v) for k,v in data.items()}
+
+
 @app.route('/networks')
-def networks(*_):
-    return {'hello': 'world'}
+def networks():
+    networks = get_database().scan(TableName='network_table')['Items']
+    return [
+        to_payload(net)
+        for net in networks
+    ]
 
 
-# The view function above will return {"hello": "world"}
-# whenever you make an HTTP GET request to '/'.
-#
-# Here are a few more examples:
-#
-# @app.route('/hello/{name}')
-# def hello_name(name):
-#    # '/hello/james' -> {"hello": "james"}
-#    return {'hello': name}
-#
-# @app.route('/users', methods=['POST'])
-# def create_user():
-#     # This is the JSON body the user sent in their POST request.
-#     user_as_json = app.current_request.json_body
-#     # We'll echo the json body back to the user in a 'user' key.
-#     return {'user': user_as_json}
-#
-# See the README documentation for more examples.
-#
+@app.route('/networks', methods=['POST'], content_types=['application/json'])
+def allocate():
+    prefixlen = int(app.current_request.json_body.get('prefixlen', 24))
+
+
+@app.route('/networks/{network}/{prefixlen}')
+def network(network, prefixlen):
+    cidr = ipaddress.ip_network(f'{network}/{prefixlen}')
+
+    network_integer = int(cidr.network_address)
+    prefix_length = cidr.prefixlen
+
+    network = get_database().get_item(
+        TableName='network_table',
+        Key=dict(
+            network_integer=dict(N=str(network_integer)),
+            prefix_length=dict(N=str(prefix_length))
+        )
+    )
+
+    if 'Item' not in network:
+        raise NotFoundError(f'Network {cidr} not found')
+
+    return to_payload(network['Item'])
+
+
+

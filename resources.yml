@@ -14,9 +14,9 @@ Resources:
         Key: !Ref 'CodeKey'
       Environment:
         Variables:
-          NETWORK_TABLE: !Ref 'NetworkTable'
+          NETWORK_TABLE: !Ref 'network_table'
     Type: AWS::Serverless::Function
-  NetworkTable:
+  network_table:
     Properties:
       AttributeDefinitions:
         - AttributeName: NetworkInteger

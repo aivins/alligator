@@ -43,24 +43,25 @@ code_key = t.add_parameter(
 network_table = t.add_resource(
     dynamodb.Table(
         'NetworkTable',
+        TableName='network_table',
         BillingMode='PAY_PER_REQUEST',
         AttributeDefinitions=[
             dynamodb.AttributeDefinition(
-                AttributeName='NetworkInteger',
+                AttributeName='network_integer',
                 AttributeType='N'
             ),
             dynamodb.AttributeDefinition(
-                AttributeName='NetworkString',
-                AttributeType='S'
+                AttributeName='prefix_length',
+                AttributeType='N'
             )
         ],
         KeySchema=[
             dynamodb.KeySchema(
-                AttributeName='NetworkInteger',
+                AttributeName='network_integer',
                 KeyType='HASH'
             ),
             dynamodb.KeySchema(
-                AttributeName='NetworkString',
+                AttributeName='prefix_length',
                 KeyType='RANGE'
             )
         ]
