@@ -104,6 +104,9 @@ def test_find_parent(test_data):
     (parent, _) = find_parent(tree, ipaddress.ip_network('11.0.0.0/8'))
     assert parent == ipaddress.ip_network('0.0.0.0/0')
 
+    (parent, _) = find_parent(tree, ipaddress.ip_network('10.0.0.0/8'))
+    assert parent == ipaddress.ip_network('0.0.0.0/0')
+
 
 # def test_local_dynamodb():
 #     response = db.describe_limits()
@@ -136,9 +139,20 @@ def test_network_free(client, test_data):
                                 '11.0.0.16/28', '192.168.16.16/28']
 
 
-# def test_network_allocate(client, test_data):
-#     result = client.http.post('/networks', body=json.dumps(dict(network='10.0.0.0/8')),
-#                               headers={'Content-Type': 'application/json'})
+def test_network_allocate(client, test_data):
+    result = client.http.post('/networks', body=json.dumps(dict(network='11.0.0.0/8')),
+                              headers={'Content-Type': 'application/json'})
+    assert result.status_code == 200
+    result = client.http.post('/networks', body=json.dumps(dict(network='11.0.0.0/8')),
+                              headers={'Content-Type': 'application/json'})
+    assert result.status_code == 409
+
+
+def test_network_allocate_next(client, test_data):
+    result = client.http.post('/networks', body=json.dumps(dict(prefixlen='28')),
+                              headers={'Content-Type': 'application/json'})
+    assert result.status_code == 200
+    assert result.json_body == {'network_integer': 3232235536, 'network_string': '192.168.0.16', 'prefix_length': 28}
 
 
 # def test_network_allocate(client, test_data):

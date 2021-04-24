@@ -1,16 +1,14 @@
 import ipaddress
+from chalicelib.utils import network_to_keys
 
 networks = [
-  dict(
-    network_integer=dict(N=str(int(ipaddress.ip_address(network)))),
-    network_string=dict(S=network),
-    prefix_length=dict(N=str(prefixlen))
-  ) for (network, prefixlen) in
+  network_to_keys(ipaddress.ip_network(network))
+  for network in
   [
-    ('192.168.0.0', 20),
-    ('192.168.0.0', 24),
-    ('192.168.1.0', 24),
-    ('192.168.0.0', 25),
-    ('10.0.0.0', 8),
+    '192.168.0.0/20',
+    '192.168.0.0/24',
+    '192.168.1.0/24',
+    '192.168.0.0/25',
+    '10.0.0.0/8',
   ]
 ]

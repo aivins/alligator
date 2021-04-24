@@ -1,14 +1,15 @@
 import ipaddress
 import logging
 from collections import OrderedDict
-from chalice import Chalice, NotFoundError
+from chalice import Chalice, NotFoundError, ConflictError, BadRequestError
 from chalicelib.database import get_database
 from chalicelib.utils import (
     to_payload,
     get_all_networks,
     make_tree,
     find_free,
-    find_parent
+    find_parent,
+    network_to_keys
 )
 
 
@@ -37,14 +38,43 @@ def free():
 
 @app.route('/networks', methods=['POST'], content_types=['application/json'])
 def allocate():
-    network = ipaddress.ip_network(app.current_request.json_body.get('network'))
+    network = app.current_request.json_body.get('network')
+    prefixlen = app.current_request.json_body.get('prefixlen')
+    
+    if network is not None and prefixlen is not None:
+        raise BadRequestError('cannot provide both network and prefixlen')
+
     networks = get_all_networks()
-    tree = make_tree(networks)
-    parent = find_parent(tree, network)
-    import json
-    print(json.dumps(tree, indent=2))
-    import ipdb; ipdb.set_trace()
-    return free
+    tree = make_tree(networks)    
+    
+    if network:
+        network = ipaddress.ip_network(network)
+        (parent, children) = find_parent(tree, network)
+        if str(network) not in children:
+            item = network_to_keys(network)
+            get_database().put_item(
+                TableName='network_table',
+                Item=item
+            )
+            return to_payload(item)
+        else:
+            raise ConflictError(f'{network} is already allocated')
+    elif prefixlen:
+        prefixlen = int(prefixlen)
+        free = next(find_free(tree, prefixlen))
+        if not free:
+            raise BadRequestError(f'Unable to allocate /{prefixlen} network, not enough free space in parent')
+        item = network_to_keys(free)
+        get_database().put_item(
+            TableName='network_table',
+            Item=item
+        )
+        return to_payload(item)
+
+    else:
+        raise BadRequestError('network or prefixlen required')
+
+
 
 
 

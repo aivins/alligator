@@ -12,6 +12,14 @@ def to_payload(data):
     return {k:cast_value(v) for k,v in data.items()}
 
 
+def network_to_keys(network):
+    return dict(
+        network_integer=dict(N=str(int(network.network_address))),
+        network_string=dict(S=str(network.network_address)),
+        prefix_length=dict(N=str(network.prefixlen))
+    )
+
+
 def boundary(address, prefixlen):
      bitprefixlen = (2**32-1) & ~ (2 ** (32-prefixlen)-1)
      return ipaddress.ip_network(
@@ -36,7 +44,7 @@ def find_parent(tree, subnet):
         if parent != (None, None):
             return parent
         ip_network = ipaddress.ip_network(network)
-        if subnet.subnet_of(ip_network):
+        if subnet.subnet_of(ip_network) and subnet != ip_network:
             return (ip_network, children)
     return (None, None)
 
@@ -92,4 +100,4 @@ def find_free(tree, prefixlen):
                 if gap >= required_size:
                     # print_gap(offset, start)
                     yield  next_boundary(ipaddress.ip_address(offset + 1), prefixlen)
-    return list(_find_free(tree, prefixlen))
+    return _find_free(tree, prefixlen)
