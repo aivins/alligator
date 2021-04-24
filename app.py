@@ -7,7 +7,8 @@ from chalicelib.utils import (
     to_payload,
     get_all_networks,
     make_tree,
-    find_free
+    find_free,
+    find_parent
 )
 
 
@@ -34,13 +35,16 @@ def free():
     return [str(f) for f in free]
 
 
-# @app.route('/networks', methods=['POST'], content_types=['application/json'])
-# def allocate():
-#     prefixlen = int(app.current_request.json_body.get('prefixlen', 24))
-#     parent_prefixlen = int(app.current_request.json_body.get('parent_prefixlen', 20))
-#     tree = build_network_tree(min_prefixlen=parent_prefixlen, max_prefixlen=prefixlen - 1)
-#     free = find_free(tree, prefixlen)
-#     return free
+@app.route('/networks', methods=['POST'], content_types=['application/json'])
+def allocate():
+    network = ipaddress.ip_network(app.current_request.json_body.get('network'))
+    networks = get_all_networks()
+    tree = make_tree(networks)
+    parent = find_parent(tree, network)
+    import json
+    print(json.dumps(tree, indent=2))
+    import ipdb; ipdb.set_trace()
+    return free
 
 
 

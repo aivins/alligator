@@ -33,23 +33,28 @@ def walk_tree(tree):
 def find_parent(tree, subnet):
     for network, children in tree.items():
         parent = find_parent(children, subnet)
-        if parent is not None:
+        if parent != (None, None):
             return parent
         ip_network = ipaddress.ip_network(network)
         if subnet.subnet_of(ip_network):
-            return children
+            return (ip_network, children)
+    return (None, None)
 
 
 def get_all_networks():
     networks = get_database().scan(TableName='network_table')['Items']
-    return [to_payload(network) for network in networks]
+    return sorted([to_payload(network) for network in networks], key=lambda net: net['network_integer'])
 
 
-def make_tree(networks, tree=OrderedDict()):
+def make_tree(networks, tree=None, min_prefixlen=0):
+    if not tree:
+        tree = OrderedDict({'0.0.0.0/0': OrderedDict()})
     for network in [ipaddress.ip_network('{network_string}/{prefix_length}'.format(**net)) for net in networks]:
-        parent = find_parent(tree, network)
-        if parent is not None:
-            parent[str(network)] = OrderedDict()
+        if network.prefixlen < min_prefixlen:
+            continue
+        (parent, children) = find_parent(tree, network)
+        if children is not None:
+            children[str(network)] = OrderedDict()
         else:
             tree[str(network)] = OrderedDict()
     return tree

@@ -7,7 +7,14 @@ from app import app
 import resources
 from .networks import networks
 from chalicelib.database import get_database
-from chalicelib.utils import boundary, next_boundary
+from chalicelib.utils import (
+    boundary,
+    next_boundary,
+    to_payload,
+    make_tree,
+    find_parent,
+    get_all_networks
+)
 
 
 os.environ['ALLIGATOR_TEST'] = "1"
@@ -43,26 +50,59 @@ def client():
 def test_data():
     print("Creating test data...")
     init_tables(db)
+    return_value = []
     for network in networks:
         db.put_item(
             TableName='network_table',
             Item=network
         )
-    return networks
+        return_value.append(to_payload(network))
+    return sorted(return_value, key=lambda net: net['network_integer'])
 
 
-def test_network_boundary_detection():
-    assert str(boundary(ipaddress.ip_address(
-        '192.168.1.99'), 24)) == '192.168.1.0/24'
-    assert str(boundary(ipaddress.ip_address(
-        '172.16.31.56'), 23)) == '172.16.30.0/23'
+# def test_network_boundary_detection():
+#     assert str(boundary(ipaddress.ip_address(
+#         '192.168.1.99'), 24)) == '192.168.1.0/24'
+#     assert str(boundary(ipaddress.ip_address(
+#         '172.16.31.56'), 23)) == '172.16.30.0/23'
 
 
-def test_network_next_boundary():
-    assert str(next_boundary(ipaddress.ip_address(
-        '192.168.1.0'), 24)) == '192.168.2.0/24'
-    assert str(next_boundary(ipaddress.ip_address(
-        '10.0.0.0'), 16)) == '10.1.0.0/16'
+# def test_network_next_boundary():
+#     assert str(next_boundary(ipaddress.ip_address(
+#         '192.168.1.0'), 24)) == '192.168.2.0/24'
+#     assert str(next_boundary(ipaddress.ip_address(
+#         '10.0.0.0'), 16)) == '10.1.0.0/16'
+
+
+def test_make_tree(test_data):
+    expected_tree = {
+        '0.0.0.0/0': {
+            '10.0.0.0/8': {},
+            '192.168.0.0/20': {
+                '192.168.0.0/24': {
+                    '192.168.0.0/25': {}
+                },
+                '192.168.1.0/24': {}
+            }
+        }
+    }
+
+    tree1 = make_tree(test_data)
+    assert tree1 == expected_tree
+
+    networks = get_all_networks()
+    tree2 = make_tree(networks)
+    assert tree2 == expected_tree
+
+
+def test_find_parent(test_data):
+    tree = make_tree(test_data)
+
+    (parent, _) = find_parent(tree, ipaddress.ip_network('192.168.0.0/28'))
+    assert parent == ipaddress.ip_network('192.168.0.0/25')
+
+    (parent, _) = find_parent(tree, ipaddress.ip_network('11.0.0.0/8'))
+    assert parent == ipaddress.ip_network('0.0.0.0/0')
 
 
 # def test_local_dynamodb():
@@ -91,10 +131,14 @@ def test_network_next_boundary():
 
 def test_network_free(client, test_data):
     result = client.http.get('/networks/free?prefixlen=28')
-    assert result.json_body == ['192.168.1.16/28', '192.168.0.16/28',
-                                '192.168.0.144/28', '192.168.1.16/28',
-                                '0.0.0.16/28', '192.168.16.16/28']
+    assert result.json_body == ['192.168.0.16/28', '192.168.0.144/28', '192.168.1.16/28',
+                                '192.168.2.16/28', '10.0.0.16/28', '0.0.0.16/28',
+                                '11.0.0.16/28', '192.168.16.16/28']
 
+
+# def test_network_allocate(client, test_data):
+#     result = client.http.post('/networks', body=json.dumps(dict(network='10.0.0.0/8')),
+#                               headers={'Content-Type': 'application/json'})
 
 
 # def test_network_allocate(client, test_data):
