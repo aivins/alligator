@@ -14,20 +14,21 @@ Resources:
         Key: !Ref 'CodeKey'
       Environment:
         Variables:
-          NETWORK_TABLE: !Ref 'network_table'
+          NETWORK_TABLE: !Ref 'NetworkTable'
     Type: AWS::Serverless::Function
-  network_table:
+  NetworkTable:
     Properties:
       AttributeDefinitions:
-        - AttributeName: NetworkInteger
+        - AttributeName: network_integer
           AttributeType: N
-        - AttributeName: NetworkString
-          AttributeType: S
+        - AttributeName: prefix_length
+          AttributeType: N
       BillingMode: PAY_PER_REQUEST
       KeySchema:
-        - AttributeName: NetworkInteger
+        - AttributeName: network_integer
           KeyType: HASH
-        - AttributeName: NetworkString
+        - AttributeName: prefix_length
           KeyType: RANGE
+      TableName: network_table
     Type: AWS::DynamoDB::Table
 
