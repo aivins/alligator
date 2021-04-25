@@ -60,18 +60,18 @@ def test_data():
     return sorted(return_value, key=lambda net: net['network_integer'])
 
 
-# def test_network_boundary_detection():
-#     assert str(boundary(ipaddress.ip_address(
-#         '192.168.1.99'), 24)) == '192.168.1.0/24'
-#     assert str(boundary(ipaddress.ip_address(
-#         '172.16.31.56'), 23)) == '172.16.30.0/23'
+def test_network_boundary_detection():
+    assert str(boundary(ipaddress.ip_address(
+        '192.168.1.99'), 24)) == '192.168.1.0/24'
+    assert str(boundary(ipaddress.ip_address(
+        '172.16.31.56'), 23)) == '172.16.30.0/23'
 
 
-# def test_network_next_boundary():
-#     assert str(next_boundary(ipaddress.ip_address(
-#         '192.168.1.0'), 24)) == '192.168.2.0/24'
-#     assert str(next_boundary(ipaddress.ip_address(
-#         '10.0.0.0'), 16)) == '10.1.0.0/16'
+def test_network_next_boundary():
+    assert str(next_boundary(ipaddress.ip_address(
+        '192.168.1.0'), 24)) == '192.168.2.0/24'
+    assert str(next_boundary(ipaddress.ip_address(
+        '10.0.0.0'), 16)) == '10.1.0.0/16'
 
 
 def test_make_tree(test_data):
@@ -108,28 +108,23 @@ def test_find_parent(test_data):
     assert parent == ipaddress.ip_network('0.0.0.0/0')
 
 
-# def test_local_dynamodb():
-#     response = db.describe_limits()
-#     assert 'AccountMaxReadCapacityUnits' in response
+def test_get_all_networks(client, test_data):
+    result = client.http.get('/networks')
+    assert len(result.json_body) == len(networks)
 
 
-# def test_get_all_networks(client, test_data):
-#     result = client.http.get('/networks')
-#     assert len(result.json_body) == len(networks)
+def test_get_network(client, test_data):
+    result = client.http.get('/networks/192.168.0.0/24')
+    assert result.json_body == {
+        'network_integer': 3232235520,
+        'network_string': '192.168.0.0',
+        'prefix_length': 24
+    }
 
 
-# def test_get_network(client, test_data):
-#     result = client.http.get('/networks/192.168.0.0/24')
-#     assert result.json_body == {
-#         'network_integer': 3232235520,
-#         'network_string': '192.168.0.0',
-#         'prefix_length': 24
-#     }
-
-
-# def test_network_not_found(client, test_data):
-#     result = client.http.get('/networks/192.168.90.0/24')
-#     assert result.status_code == 404
+def test_network_not_found(client, test_data):
+    result = client.http.get('/networks/192.168.90.0/24')
+    assert result.status_code == 404
 
 
 def test_network_free(client, test_data):
@@ -152,10 +147,5 @@ def test_network_allocate_next(client, test_data):
     result = client.http.post('/networks', body=json.dumps(dict(prefixlen='28')),
                               headers={'Content-Type': 'application/json'})
     assert result.status_code == 200
-    assert result.json_body == {'network_integer': 3232235536, 'network_string': '192.168.0.16', 'prefix_length': 28}
-
-
-# def test_network_allocate(client, test_data):
-#     result = client.http.post('/networks', body=json.dumps(dict(prefixlen=24)),
-#                               headers={'Content-Type': 'application/json'})
-#     assert '192.168.0.0/24' in result.json_body
+    assert result.json_body == {'network_integer': 3232235536,
+                                'network_string': '192.168.0.16', 'prefix_length': 28}
