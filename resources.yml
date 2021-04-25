@@ -16,6 +16,36 @@ Resources:
         Variables:
           NETWORK_TABLE: !Ref 'NetworkTable'
     Type: AWS::Serverless::Function
+  DefaultRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - dynamodb:*
+                Effect: Allow
+                Resource:
+                  - arn:aws:dynamodb:*:*:table/network_table
+          PolicyName: NetworkTableAccess
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource:
+                  - arn:*:logs:*:*:*
+          PolicyName: DefaultRolePolicy
+    Type: AWS::IAM::Role
   NetworkTable:
     Properties:
       AttributeDefinitions:

@@ -1,12 +1,25 @@
 #!/usr/bin/env python
 
+import sys
 from awscli.customizations.s3uploader import S3Uploader
-from assume_role import aws_account
+from chalicelib.assume_role import aws_account
+from tests.networks import networks
 
 STACK_NAME='NetworkAlligator'
 ASSUME_ROLE='AWSControlTowerExecution'
 WORKLOAD_ACCOUNT='alligator'
 DEPLOY_BUCKET='alligator-deployment-bucket'
+
+
+@aws_account(ASSUME_ROLE, WORKLOAD_ACCOUNT)
+def init_db(context):
+    session = context.session
+    db = session.client('dynamodb')
+    for network in networks:
+        db.put_item(
+            TableName='network_table',
+            Item=network
+        )
 
 
 @aws_account(ASSUME_ROLE, WORKLOAD_ACCOUNT)
@@ -77,4 +90,7 @@ def deploy(context):
 
 
 if __name__ == '__main__':
-    deploy()
+    if len(sys.argv) > 1 and sys.argv[1] == 'init':
+        init_db()
+    else:
+        deploy()

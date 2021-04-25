@@ -1,10 +1,24 @@
 from troposphere import (
     Template,
     Ref,
+    Sub,
     Parameter,
     dynamodb,
-    serverless
+    serverless,
+    iam
 )
+
+from awacs.aws import (
+    PolicyDocument,
+    Statement,
+    Allow,
+    Principal,
+    Action,
+)
+
+import awacs.dynamodb
+import awacs.logs
+import awacs.sts
 
 
 
@@ -18,6 +32,10 @@ class UnvalidatedAWSObject:
 
 
 class UnvalidatedFunction(UnvalidatedAWSObject, serverless.Function):
+    pass
+
+
+class UnvalidatedRole(UnvalidatedAWSObject, iam.Role):
     pass
 
 
@@ -81,6 +99,57 @@ t.add_resource(
                 NETWORK_TABLE=Ref(network_table)
             )
         )
+    )
+)
+
+
+t.add_resource(
+    iam.Role(
+        'DefaultRole',
+        AssumeRolePolicyDocument=PolicyDocument(
+            Statement=[
+                Statement(
+                    Effect=Allow,
+                    Action=[awacs.sts.AssumeRole],
+                    Principal=Principal(
+                        'Service', ['lambda.amazonaws.com']
+                    )
+                )
+            ],
+        ),
+        Policies=[
+            iam.Policy(
+                PolicyName='NetworkTableAccess',
+                PolicyDocument=PolicyDocument(
+                    Statement=[
+                        Statement(
+                            Effect=Allow,
+                            Action=[awacs.dynamodb.Action('*')],
+                            Resource=['arn:aws:dynamodb:*:*:table/network_table']
+                        )
+                    ]
+                )
+            ),
+            # This policy is designed to be identical to the one produced by Chalic
+            # Merging the Policies key above during build overwrites it, so it has
+            # to be included here to make it into the final sam.yaml
+            iam.Policy(
+                PolicyName='DefaultRolePolicy',
+                PolicyDocument=PolicyDocument(
+                    Statement=[
+                        Statement(
+                            Effect=Allow,
+                            Action=[
+                                awacs.logs.CreateLogGroup,
+                                awacs.logs.CreateLogStream,
+                                awacs.logs.PutLogEvents
+                            ],
+                            Resource=['arn:*:logs:*:*:*']
+                        )
+                    ],
+                )
+            )
+        ]
     )
 )
 

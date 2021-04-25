@@ -5,10 +5,13 @@ from .database import get_database
 
 def to_payload(data):
     def cast_value(value):
-        if 'N' in value:
-            return int(value['N'])
+        if isinstance(value, dict):
+            if 'N' in value:
+                return int(value['N'])
+            else:
+                return value['S']
         else:
-            return value['S']
+            return value
     return {k:cast_value(v) for k,v in data.items()}
 
 

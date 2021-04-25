@@ -1,9 +1,9 @@
 import os
-from functools import cache
+from functools import lru_cache
 import boto3
 
 
-
+@lru_cache
 def get_database():
     test = bool(os.environ.get('ALLIGATOR_TEST', False))
     session = boto3.Session()
