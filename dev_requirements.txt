@@ -1,0 +1,7 @@
+chalice
+boto3
+troposphere
+awacs
+awscliv2
+awscli
+pytest
