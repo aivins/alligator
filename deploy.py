@@ -1,31 +1,57 @@
 #!/usr/bin/env python
 
 import sys
+import os
 from awscli.customizations.s3uploader import S3Uploader
 from chalicelib.assume_role import aws_account
+from chalicelib.database import get_database
 from tests.networks import networks
+import resources
 
-STACK_NAME='NetworkAlligator'
-ASSUME_ROLE='AWSControlTowerExecution'
-WORKLOAD_ACCOUNT='alligator'
-DEPLOY_BUCKET='alligator-deployment-bucket'
+STACK_NAME = 'NetworkAlligator'
+ASSUME_ROLE = 'AWSControlTowerExecution'
+WORKLOAD_ACCOUNT = 'alligator'
+DEPLOY_BUCKET = 'alligator-deployment-bucket'
+
+
+test = bool(os.environ.get('ALLIGATOR_TEST', False))
+
+
+def init_tables(db):
+    tables = dict(
+        network_table=resources.network_table.to_dict()['Properties']
+    )
+    for table_name, definition in tables.items():
+        try:
+            db.delete_table(TableName=table_name)
+            waiter = db.get_waiter('table_not_exists')
+            waiter.wait(TableName=table_name)
+        except db.exceptions.ResourceNotFoundException:
+            pass
+        db.create_table(
+            **definition
+        )
 
 
 @aws_account(ASSUME_ROLE, WORKLOAD_ACCOUNT)
 def init_db(context):
+    print('Initializing network_table...')
     session = context.session
-    db = session.client('dynamodb')
+    db = get_database(session)
+    if test:
+        init_tables(db)
     for network in networks:
+        print(network)
         db.put_item(
             TableName='network_table',
             Item=network
         )
+    print('done!')
 
 
 @aws_account(ASSUME_ROLE, WORKLOAD_ACCOUNT)
 def deploy(context):
     session = context.session
-
 
     with open('dist/sam.yaml', 'r') as template_file:
         template_body = template_file.read()
@@ -58,7 +84,7 @@ def deploy(context):
             continue
         if STACK_NAME == stack['StackName']:
             stack_exists = True
-    
+
     if stack_exists:
         print('Updating stack...')
         operation = cfn.update_stack

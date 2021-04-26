@@ -32,7 +32,7 @@ def free():
     networks = get_all_networks()
     tree = make_tree(networks)
     free = list(find_free(tree, prefixlen))
-    return [str(f) for f in free]
+    return [to_payload(network_to_keys(f)) for f in free]
 
 
 @endpoint.route('/', methods=['POST'], content_types=['application/json'])

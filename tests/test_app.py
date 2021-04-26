@@ -6,6 +6,7 @@ from pytest import fixture
 from app import app
 import resources
 from .networks import networks
+from deploy import init_tables
 from chalicelib.database import get_database
 from chalicelib.utils import (
     boundary,
@@ -18,26 +19,7 @@ from chalicelib.utils import (
 
 
 os.environ['ALLIGATOR_TEST'] = "1"
-
-
-tables = dict(
-    network_table=resources.network_table.to_dict()['Properties']
-)
-
 db = get_database()
-
-
-def init_tables(db):
-    for table_name, definition in tables.items():
-        try:
-            db.delete_table(TableName=table_name)
-            waiter = db.get_waiter('table_not_exists')
-            waiter.wait(TableName=table_name)
-        except db.exceptions.ResourceNotFoundException:
-            pass
-        db.create_table(
-            **definition
-        )
 
 
 @fixture
@@ -129,9 +111,48 @@ def test_network_not_found(client, test_data):
 
 def test_network_free(client, test_data):
     result = client.http.get('/free?prefixlen=28')
-    assert result.json_body == ['192.168.0.16/28', '192.168.0.144/28', '192.168.1.16/28',
-                                '192.168.2.16/28', '10.0.0.16/28', '0.0.0.16/28',
-                                '11.0.0.16/28', '192.168.16.16/28']
+    assert result.json_body == [
+        {
+            "network_integer": 3232235536,
+            "network_string": "192.168.0.16/28",
+            "prefix_length": 28
+        },
+        {
+            "network_integer": 3232235664,
+            "network_string": "192.168.0.144/28",
+            "prefix_length": 28
+        },
+        {
+            "network_integer": 3232235792,
+            "network_string": "192.168.1.16/28",
+            "prefix_length": 28
+        },
+        {
+            "network_integer": 3232236048,
+            "network_string": "192.168.2.16/28",
+            "prefix_length": 28
+        },
+        {
+            "network_integer": 167772176,
+            "network_string": "10.0.0.16/28",
+            "prefix_length": 28
+        },
+        {
+            "network_integer": 16,
+            "network_string": "0.0.0.16/28",
+            "prefix_length": 28
+        },
+        {
+            "network_integer": 184549392,
+            "network_string": "11.0.0.16/28",
+            "prefix_length": 28
+        },
+        {
+            "network_integer": 3232239632,
+            "network_string": "192.168.16.16/28",
+            "prefix_length": 28
+        }
+    ]
 
 
 def test_network_allocate(client, test_data):
