@@ -7,5 +7,6 @@
     },
     "files.watcherExclude": {
         "dist": true
-    }
+    },
+    "editor.formatOnSave": true
 }
