@@ -109,43 +109,43 @@ def test_find_parent(test_data):
 
 
 def test_get_all_networks(client, test_data):
-    result = client.http.get('/networks')
+    result = client.http.get('/')
     assert len(result.json_body) == len(networks)
 
 
 def test_get_network(client, test_data):
-    result = client.http.get('/networks/192.168.0.0/24')
+    result = client.http.get('/192.168.0.0/24')
     assert result.json_body == {
         'network_integer': 3232235520,
-        'network_string': '192.168.0.0',
+        'network_string': '192.168.0.0/24',
         'prefix_length': 24
     }
 
 
 def test_network_not_found(client, test_data):
-    result = client.http.get('/networks/192.168.90.0/24')
+    result = client.http.get('/192.168.90.0/24')
     assert result.status_code == 404
 
 
 def test_network_free(client, test_data):
-    result = client.http.get('/networks/free?prefixlen=28')
+    result = client.http.get('/free?prefixlen=28')
     assert result.json_body == ['192.168.0.16/28', '192.168.0.144/28', '192.168.1.16/28',
                                 '192.168.2.16/28', '10.0.0.16/28', '0.0.0.16/28',
                                 '11.0.0.16/28', '192.168.16.16/28']
 
 
 def test_network_allocate(client, test_data):
-    result = client.http.post('/networks', body=json.dumps(dict(network='11.0.0.0/8')),
+    result = client.http.post('/', body=json.dumps(dict(network='11.0.0.0/8')),
                               headers={'Content-Type': 'application/json'})
     assert result.status_code == 200
-    result = client.http.post('/networks', body=json.dumps(dict(network='11.0.0.0/8')),
+    result = client.http.post('/', body=json.dumps(dict(network='11.0.0.0/8')),
                               headers={'Content-Type': 'application/json'})
     assert result.status_code == 409
 
 
 def test_network_allocate_next(client, test_data):
-    result = client.http.post('/networks', body=json.dumps(dict(prefixlen='28')),
+    result = client.http.post('/', body=json.dumps(dict(prefixlen='28')),
                               headers={'Content-Type': 'application/json'})
     assert result.status_code == 200
     assert result.json_body == {'network_integer': 3232235536,
-                                'network_string': '192.168.0.16', 'prefix_length': 28}
+                                'network_string': '192.168.0.16/28', 'prefix_length': 28}

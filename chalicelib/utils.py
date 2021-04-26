@@ -12,26 +12,28 @@ def to_payload(data):
                 return value['S']
         else:
             return value
-    return {k:cast_value(v) for k,v in data.items()}
+    return {k: cast_value(v) for k, v in data.items()}
 
 
 def network_to_keys(network):
     return dict(
         network_integer=dict(N=str(int(network.network_address))),
-        network_string=dict(S=str(network.network_address)),
+        network_string=dict(
+            S=f'{network.network_address}/{network.prefixlen}'),
         prefix_length=dict(N=str(network.prefixlen))
     )
 
 
 def boundary(address, prefixlen):
-     bitprefixlen = (2**32-1) & ~ (2 ** (32-prefixlen)-1)
-     return ipaddress.ip_network(
-         str(ipaddress.ip_address(int(address) & bitprefixlen)) + f'/{prefixlen}')
+    bitprefixlen = (2**32-1) & ~ (2 ** (32-prefixlen)-1)
+    return ipaddress.ip_network(
+        str(ipaddress.ip_address(int(address) & bitprefixlen)) + f'/{prefixlen}')
 
 
 def next_boundary(address, prefixlen):
     network_boundary_int = int(boundary(address, prefixlen).network_address)
-    cidr = str(ipaddress.ip_address(network_boundary_int + 2 ** (32 - prefixlen))) + f'/{prefixlen}'
+    cidr = str(ipaddress.ip_address(network_boundary_int +
+               2 ** (32 - prefixlen))) + f'/{prefixlen}'
     return ipaddress.ip_network(cidr)
 
 
@@ -60,7 +62,7 @@ def get_all_networks():
 def make_tree(networks, tree=None, min_prefixlen=0):
     if not tree:
         tree = OrderedDict({'0.0.0.0/0': OrderedDict()})
-    for network in [ipaddress.ip_network('{network_string}/{prefix_length}'.format(**net)) for net in networks]:
+    for network in [ipaddress.ip_network('{network_string}'.format(**net)) for net in networks]:
         if network.prefixlen < min_prefixlen:
             continue
         (parent, children) = find_parent(tree, network)
@@ -80,6 +82,7 @@ def print_gap(start, end):
 
 def find_free(tree, prefixlen):
     seen = {}
+
     def _find_free(tree, prefixlen):
         required_size = 2 ** (32 - prefixlen)
         for network, subnets in walk_tree(tree):
@@ -99,8 +102,8 @@ def find_free(tree, prefixlen):
                         yield next_boundary(ipaddress.ip_address(offset + 1), prefixlen)
                     offset = int(subnet.broadcast_address)
                 start = int(network.broadcast_address)
-                gap =  start - offset
+                gap = start - offset
                 if gap >= required_size:
                     # print_gap(offset, start)
-                    yield  next_boundary(ipaddress.ip_address(offset + 1), prefixlen)
+                    yield next_boundary(ipaddress.ip_address(offset + 1), prefixlen)
     return _find_free(tree, prefixlen)
