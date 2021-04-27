@@ -18,6 +18,8 @@ Satisfy python requirements:
 pip3 install -r dev_requirements.txt
 ```
 
+**Note: requirements.txt is used by Chalic for the dist bundle, so use dev_requirements.txt for development**
+
 Run local dynamodb server:
 
 ```
