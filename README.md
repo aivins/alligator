@@ -71,3 +71,36 @@ It is also possible to create some sample data in the production environment bas
 ./deploy init
 ```
 
+# Usage
+
+Database is a flat table of known allocations.
+
+| Endpoint | Method | Description | Parameters |
+| -------- | ------ | ----------- | ---------- |
+| /        | GET    | All known allocations | *none* |
+| /{network} | GET | Fetch a single allocation | *none* |
+| /free    | GET    | List of free subnets of required size below known allocations | prefixlen int |
+| /allocate | POST | Allocate a specific free subnet or the next available of size | network cidrstr, prefixlen len |
+
+## Authorization
+APIGateway requires IAM authorization by way of a sig4 signed request. The user or role that signs the request requires `execute-api` to the resource with a policy statement something like:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "execute-api:Execution-operation"           
+      ],
+      "Resource": [
+        "arn:aws:execute-api:region:account-id:api-id/stage/*/*",
+      ]
+    }
+  ]
+} 
+```
+
+A small proof of concept on issuing this request from python is included in the file `request.py`.
+
