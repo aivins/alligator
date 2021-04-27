@@ -1,4 +1,4 @@
 #!/bin/bash
 
-python resources.py > resources.yml && \
-chalice package --merge-template resources.yml --template-format yaml dist
+python resources.py > resources.json && \
+chalice package --merge-template resources.json --template-format json dist

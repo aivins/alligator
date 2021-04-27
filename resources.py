@@ -21,8 +21,6 @@ import awacs.logs
 import awacs.sts
 
 
-
-
 class UnvalidatedAWSObject:
     def _validate_props(self):
         pass
@@ -125,7 +123,8 @@ t.add_resource(
                         Statement(
                             Effect=Allow,
                             Action=[awacs.dynamodb.Action('*')],
-                            Resource=['arn:aws:dynamodb:*:*:table/network_table']
+                            Resource=[
+                                'arn:aws:dynamodb:*:*:table/network_table']
                         )
                     ]
                 )
@@ -155,4 +154,4 @@ t.add_resource(
 
 
 if __name__ == '__main__':
-    print(t.to_yaml())
+    print(t.to_json())

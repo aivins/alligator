@@ -1,0 +1,118 @@
+{
+    "Description": "Network Allocator Resources",
+    "Parameters": {
+        "CodeBucket": {
+            "Description": "S3 bucket name for ZIP bundle",
+            "Type": "String"
+        },
+        "CodeKey": {
+            "Description": "S3 path of ZIP bundle",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "APIHandler": {
+            "Properties": {
+                "CodeUri": {
+                    "Bucket": {
+                        "Ref": "CodeBucket"
+                    },
+                    "Key": {
+                        "Ref": "CodeKey"
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "NETWORK_TABLE": {
+                            "Ref": "NetworkTable"
+                        }
+                    }
+                }
+            },
+            "Type": "AWS::Serverless::Function"
+        },
+        "DefaultRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "dynamodb:*"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": [
+                                        "arn:aws:dynamodb:*:*:table/network_table"
+                                    ]
+                                }
+                            ]
+                        },
+                        "PolicyName": "NetworkTableAccess"
+                    },
+                    {
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": [
+                                        "arn:*:logs:*:*:*"
+                                    ]
+                                }
+                            ]
+                        },
+                        "PolicyName": "DefaultRolePolicy"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "NetworkTable": {
+            "Properties": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "network_integer",
+                        "AttributeType": "N"
+                    },
+                    {
+                        "AttributeName": "prefix_length",
+                        "AttributeType": "N"
+                    }
+                ],
+                "BillingMode": "PAY_PER_REQUEST",
+                "KeySchema": [
+                    {
+                        "AttributeName": "network_integer",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "prefix_length",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "TableName": "network_table"
+            },
+            "Type": "AWS::DynamoDB::Table"
+        }
+    }
+}

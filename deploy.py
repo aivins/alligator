@@ -53,7 +53,7 @@ def init_db(context):
 def deploy(context):
     session = context.session
 
-    with open('dist/sam.yaml', 'r') as template_file:
+    with open('dist/sam.json', 'r') as template_file:
         template_body = template_file.read()
 
     s3 = session.client('s3')

@@ -5,3 +5,4 @@ awacs
 awscliv2
 awscli
 pytest
+aws_requests_auth

@@ -1,5 +1,12 @@
+from functools import wraps
 import ipaddress
-from chalice import Blueprint, NotFoundError, ConflictError, BadRequestError
+from chalice import (
+    Blueprint,
+    NotFoundError,
+    ConflictError,
+    BadRequestError,
+    IAMAuthorizer
+)
 from chalicelib.database import get_database
 from chalicelib.utils import (
     to_payload,
@@ -10,12 +17,26 @@ from chalicelib.utils import (
     network_to_keys
 )
 
+authorizer = IAMAuthorizer()
 
 endpoint = Blueprint(__name__)
 networks_endpoint = endpoint
 
 
-@endpoint.route('/')
+def protected_route(*args, **kwargs):
+    def wrapper(f):
+        @wraps(f)
+        @endpoint.route(*args, **kwargs, authorizer=authorizer)
+        def wrapped(*args, **kwargs):
+            return f(*args, **kwargs)
+        return wrapped
+    return wrapper
+
+
+endpoint.protected_route = protected_route
+
+
+@protected_route('/')
 def networks():
     networks = get_all_networks()
     return [
@@ -24,7 +45,7 @@ def networks():
     ]
 
 
-@endpoint.route('/free')
+@protected_route('/free')
 def free():
     params = endpoint.current_request.query_params or {}
     prefixlen = int(params.get('prefixlen', 24))
@@ -35,7 +56,7 @@ def free():
     return [to_payload(network_to_keys(f)) for f in free]
 
 
-@endpoint.route('/', methods=['POST'], content_types=['application/json'])
+@protected_route('/', methods=['POST'], content_types=['application/json'])
 def allocate():
     network = endpoint.current_request.json_body.get('network')
     prefixlen = endpoint.current_request.json_body.get('prefixlen')
@@ -75,7 +96,7 @@ def allocate():
         raise BadRequestError('network or prefixlen required')
 
 
-@endpoint.route('/{network}/{prefixlen}')
+@protected_route('/{network}/{prefixlen}')
 def network(network, prefixlen):
     cidr = ipaddress.ip_network(f'{network}/{prefixlen}')
 
