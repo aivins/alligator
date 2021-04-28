@@ -38,9 +38,6 @@ def protected_route(*args, **kwargs):
     return wrapper
 
 
-endpoint.protected_route = protected_route
-
-
 @protected_route('/')
 def networks():
     networks = get_all_networks()

@@ -15,13 +15,17 @@ def to_payload(data):
     return {k: cast_value(v) for k, v in data.items()}
 
 
-def network_to_keys(network):
-    return dict(
-        network_integer=dict(N=str(int(network.network_address))),
-        network_string=dict(
+def network_to_keys(network, **attrs):
+    return {
+        'network_integer': dict(N=str(int(network.network_address))),
+        'network_string': dict(
             S=f'{network.network_address}/{network.prefixlen}'),
-        prefix_length=dict(N=str(network.prefixlen))
-    )
+        'prefix_length': dict(N=str(network.prefixlen)),
+        'class': dict(S=attrs.get('class', '')),
+        'group': dict(S=attrs.get('group', '')),
+        'description': dict(S=attrs.get('description', '')),
+        'account': dict(S=attrs.get('account', ''))
+    }
 
 
 def boundary(address, prefixlen):
