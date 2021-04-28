@@ -1,3 +1,4 @@
+import os
 from functools import wraps
 import ipaddress
 from chalice import (
@@ -17,7 +18,11 @@ from chalicelib.utils import (
     network_to_keys
 )
 
-authorizer = IAMAuthorizer()
+
+if bool(os.environ.get('ALLIGATOR_TEST', False)):
+    authorizer = IAMAuthorizer()
+else:
+    authorizer = None
 
 endpoint = Blueprint(__name__)
 networks_endpoint = endpoint
